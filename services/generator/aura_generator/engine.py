@@ -8,13 +8,58 @@ lets CI and demos work without a live model.
 
 from __future__ import annotations
 
+import logging
 import re
-from typing import Any
+from typing import Any, get_args
 
+from pydantic import ValidationError
 from slugify import slugify
 
-from .blueprint import AIConfig, Blueprint, Entity, EntityField, Page, Relation
+from .blueprint import AIConfig, Blueprint, Entity, EntityField, FieldType, Page, Relation
 from .llm import OllamaError, generate_json
+
+log = logging.getLogger(__name__)
+
+_ALLOWED_FIELD_TYPES: set[str] = set(get_args(FieldType))
+_FIELD_TYPE_ALIASES: dict[str, str] = {
+    # LLMs often emit SQL-ish or free-form types; normalize to the closest allowed kind.
+    "reference": "uuid",
+    "relation": "uuid",
+    "foreign_key": "uuid",
+    "fk": "uuid",
+    "id": "uuid",
+    "enum": "string",
+    "varchar": "string",
+    "char": "string",
+    "longtext": "text",
+    "richtext": "text",
+    "markdown": "text",
+    "html": "text",
+    "email": "string",
+    "url": "string",
+    "phone": "string",
+    "password": "string",
+    "int": "integer",
+    "bigint": "integer",
+    "smallint": "integer",
+    "number": "decimal",
+    "numeric": "decimal",
+    "money": "decimal",
+    "currency": "decimal",
+    "double": "float",
+    "real": "float",
+    "bool": "boolean",
+    "bit": "boolean",
+    "timestamp": "datetime",
+    "time": "datetime",
+    "object": "json",
+    "jsonb": "json",
+    "array": "json",
+    "list": "json",
+    "dict": "json",
+    "map": "json",
+}
+_ALLOWED_AI_PROVIDERS: set[str] = set(get_args(AIConfig.model_fields["provider"].annotation))
 
 SYSTEM_PROMPT = """You are Aura's Blueprint Engine. Given a natural-language
 description of an application, produce a JSON App Blueprint describing its
@@ -74,13 +119,32 @@ async def blueprint_from_prompt(prompt: str, *, use_llm: bool = True) -> Bluepri
             if bp.entities:
                 bp.ensure_default_pages()
                 return bp
-        except OllamaError:
-            # Fall through to heuristic fallback
-            pass
+        except OllamaError as exc:
+            log.warning("ollama error, falling back to heuristic: %s", exc)
+        except ValidationError as exc:
+            # LLM returned structurally-invalid JSON the sanitizer couldn't rescue
+            # (e.g. missing required fields, wrong nesting). Fall back to heuristic.
+            log.warning("llm blueprint failed validation, falling back to heuristic: %s", exc)
 
     bp = _heuristic(prompt)
     bp.ensure_default_pages()
     return bp
+
+
+def _normalize_field_type(raw_type: Any) -> str:
+    """Map LLM-emitted field types onto our closed FieldType Literal.
+
+    Real LLMs (including llama3.1) often emit SQL-ish or free-form types like
+    'reference', 'varchar', 'timestamp', 'enum'. Strict Literal validation
+    rejects these and surfaces as a 500 to the user. We normalize aggressively:
+    exact match → alias table → safe default ('string').
+    """
+    if not isinstance(raw_type, str):
+        return "string"
+    t = raw_type.strip().lower()
+    if t in _ALLOWED_FIELD_TYPES:
+        return t
+    return _FIELD_TYPE_ALIASES.get(t, "string")
 
 
 def _coerce(raw: dict[str, Any], *, fallback_name: str) -> Blueprint:
@@ -95,13 +159,21 @@ def _coerce(raw: dict[str, Any], *, fallback_name: str) -> Blueprint:
     for e in data.get("entities", []) or []:
         if not isinstance(e, dict) or not e.get("name"):
             continue
-        fields = [f for f in (e.get("fields") or []) if isinstance(f, dict) and f.get("name")]
-        rels = [r for r in (e.get("relations") or []) if isinstance(r, dict) and r.get("name") and r.get("target")]
+        fields = [
+            f for f in (e.get("fields") or [])
+            if isinstance(f, dict) and isinstance(f.get("name"), str) and f["name"].strip()
+        ]
+        rels = [
+            r for r in (e.get("relations") or [])
+            if isinstance(r, dict)
+            and isinstance(r.get("name"), str) and r["name"].strip()
+            and isinstance(r.get("target"), str) and r["target"].strip()
+        ]
         # Drop system field names the LLM sometimes emits
         fields = [f for f in fields if f["name"].lower() not in {"id", "created_at", "updated_at"}]
-        # Default type
+        # Normalize every field type to the closed FieldType Literal
         for f in fields:
-            f.setdefault("type", "string")
+            f["type"] = _normalize_field_type(f.get("type"))
         ents.append({"name": e["name"], "description": e.get("description"), "fields": fields, "relations": rels})
     data["entities"] = ents
 
@@ -113,7 +185,14 @@ def _coerce(raw: dict[str, Any], *, fallback_name: str) -> Blueprint:
 
     ai_enabled = bool(data.get("ai_enabled", False))
     ai_config = data.get("ai_config")
-    if ai_enabled and not ai_config:
+    if isinstance(ai_config, dict):
+        provider = str(ai_config.get("provider", "") or "").strip().lower()
+        if provider not in _ALLOWED_AI_PROVIDERS:
+            # Unknown provider (e.g. llama3.1 hallucinates 'googlecloud'): force ollama,
+            # since that's the only LLM this deployment actually talks to.
+            ai_config["provider"] = "ollama"
+        data["ai_config"] = ai_config
+    if ai_enabled and not data.get("ai_config"):
         data["ai_config"] = {"provider": "ollama", "model": "llama3.2:3b"}
 
     return Blueprint(**data)
