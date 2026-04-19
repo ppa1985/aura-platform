@@ -1,0 +1,28 @@
+import Link from "next/link";
+
+const NAV = [
+  { name: "Dashboard", href: "/" },
+  { name: "Warehouses", href: "/warehouse" },
+  { name: "Products", href: "/product" },
+  { name: "InventoryLevels", href: "/inventory-level" },
+  { name: "Shipments", href: "/shipment" },
+  { name: "Suppliers", href: "/supplier" },
+  ];
+
+export function Nav() {
+  return (
+    <aside className="hidden w-60 shrink-0 border-r bg-muted/30 p-6 md:block">
+      <div className="mb-6">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">Aura app</div>
+        <div className="text-lg font-semibold leading-tight">Warehouse Management System</div>
+      </div>
+      <nav className="space-y-1">
+        {NAV.map((item) => (
+          <Link key={item.href} href={item.href} className="block rounded-md px-3 py-2 text-sm hover:bg-muted">
+            {item.name}
+          </Link>
+        ))}
+      </nav>
+    </aside>
+  );
+}

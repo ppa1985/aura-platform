@@ -1,0 +1,40 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { query, SCHEMA } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
+
+type Row = Record<string, unknown> & { id: number };
+
+export default async function InventoryLevelDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const numeric = Number(id);
+  if (!Number.isFinite(numeric)) notFound();
+  const rows = await query<Row>(`SELECT * FROM "${SCHEMA}"."inventory_levels" WHERE id = $1`, [numeric]);
+  const row = rows[0];
+  if (!row) notFound();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">InventoryLevel #{String(row.id)}</h1>
+        <Link href="/inventory-level"><Button variant="outline">Back</Button></Link>
+      </div>
+      <Card>
+        <CardHeader><CardTitle>Details</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {Object.entries(row).map(([k, v]) => (
+              <div key={k}>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">{k}</dt>
+                <dd className="text-sm">{String(v ?? "")}</dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

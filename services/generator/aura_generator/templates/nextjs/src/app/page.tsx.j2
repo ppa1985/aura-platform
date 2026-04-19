@@ -1,0 +1,40 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { query } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
+
+async function getCounts() {
+  const counts: Record<string, number> = {};
+  {% for e in entities %}
+  try {
+    const r = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM "{{ schema_name }}"."{{ e.table }}"`);
+    counts["{{ e.name }}"] = Number(r[0]?.count ?? 0);
+  } catch {
+    counts["{{ e.name }}"] = 0;
+  }
+  {% endfor %}
+  return counts;
+}
+
+export default async function Dashboard() {
+  const counts = await getCounts();
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight">{{ bp.name }}</h1>
+        <p className="text-muted-foreground">{{ bp.description }}</p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {% for e in entities %}
+        <Card>
+          <CardHeader><CardTitle>{{ e.name }}s</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-4xl font-semibold">{counts["{{ e.name }}"] ?? 0}</div>
+            <a href="/{{ e.slug }}" className="text-sm text-muted-foreground hover:underline">View all →</a>
+          </CardContent>
+        </Card>
+        {% endfor %}
+      </div>
+    </div>
+  );
+}
