@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+
 const BASE = process.env.GENERATOR_URL || "http://localhost:8000";
 
 export type App = {
@@ -10,9 +12,27 @@ export type App = {
   container_id: string | null;
   last_error: string | null;
   ai_enabled: boolean;
+  git_pushed_url: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export type CurrentUser = {
+  id: number;
+  email: string;
+  verified: boolean;
+  git_account: {
+    provider: string;
+    username: string;
+    workspace_repo: string;
+  } | null;
+};
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const c = await cookies();
+  const session = c.get("aura_session");
+  return session ? { Cookie: `aura_session=${session.value}` } : {};
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${BASE}${path}`, {
@@ -20,6 +40,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store",
     headers: {
       "Content-Type": "application/json",
+      ...(await authHeaders()),
       ...(init?.headers || {}),
     },
   });
@@ -28,6 +49,14 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`Generator ${path} ${r.status}: ${text}`);
   }
   return (await r.json()) as T;
+}
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  try {
+    return await req<CurrentUser>("/auth/me");
+  } catch {
+    return null;
+  }
 }
 
 export async function listApps(): Promise<App[]> {
@@ -43,29 +72,6 @@ export async function getApp(slug: string): Promise<App | null> {
   } catch {
     return null;
   }
-}
-export async function createBlueprint(prompt: string, useLlm = true) {
-  return req<Record<string, unknown>>("/blueprints", {
-    method: "POST",
-    body: JSON.stringify({ prompt, use_llm: useLlm }),
-  });
-}
-export async function createApp(prompt: string, useLlm = true) {
-  return req<{
-    slug: string;
-    name: string;
-    url: string;
-    schema: string;
-    heal_ok: boolean;
-    heal_attempts: Array<{ attempt: number; ok: boolean; output: string }>;
-    deployment: { backend: string; url?: string; error?: string } | null;
-  }>("/apps", {
-    method: "POST",
-    body: JSON.stringify({ prompt, use_llm: useLlm }),
-  });
-}
-export async function deleteApp(slug: string) {
-  return req(`/apps/${slug}`, { method: "DELETE" });
 }
 export async function healthGenerator() {
   try {

@@ -18,4 +18,4 @@ export async function ask(prompt: string, system?: string): Promise<string> {
   return (j.response ?? "").toString();
 }
 
-export const AI_ENABLED = true;
+export const AI_ENABLED = false;

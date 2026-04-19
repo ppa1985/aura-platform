@@ -50,7 +50,7 @@ export default async function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Warehouse Management System</h1>
-        <p className="text-muted-foreground">Build me a Warehouse Management System with products, warehouses, inventory levels, suppliers, and inbound/outbound shipments. Include a dashboard that summarizes stock levels across warehouses.</p>
+        <p className="text-muted-foreground">Build me a Warehouse Management System with products, warehouses, inventory levels, and inbound/outbound shipments.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         

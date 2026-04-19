@@ -26,5 +26,16 @@ class Settings(BaseSettings):
     self_heal_max_attempts: int = 3
     self_heal_timeout_seconds: int = 180
 
+    # Auth
+    jwt_secret: str = "dev-not-a-real-secret-change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_hours: int = 24 * 7
+    # 32-byte urlsafe base64 Fernet key; override in production via env.
+    encryption_key: str = "dev-insecure-fernet-key-change-change-change="
+
+    # Email backend: "console" (log codes) or "smtp" (future).
+    email_backend: str = "console"
+    email_from: str = "Aura <no-reply@aura.local>"
+
 
 settings = Settings()  # type: ignore[call-arg]

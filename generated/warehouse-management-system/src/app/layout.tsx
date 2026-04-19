@@ -4,7 +4,7 @@ import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
   title: "Warehouse Management System",
-  description: "Build me a Warehouse Management System with products, warehouses, inventory levels, suppliers, and inbound/outbound shipments. Include a dashboard that summarizes stock levels across warehouses.",
+  description: "Build me a Warehouse Management System with products, warehouses, inventory levels, and inbound/outbound shipments.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

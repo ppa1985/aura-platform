@@ -6,12 +6,12 @@
 
 ## 1. Summary
 
-Build me a Warehouse Management System with products, warehouses, inventory levels, suppliers, and inbound/outbound shipments. Include a dashboard that summarizes stock levels across warehouses.
+Build me a Warehouse Management System with products, warehouses, inventory levels, and inbound/outbound shipments.
 
 - **App name:** Warehouse Management System
 - **Slug:** `warehouse-management-system`
 - **Database schema:** `app_warehouse_management_system` (isolated Postgres schema)
-- **AI integration:** Enabled
+- **AI integration:** Disabled
 
 ## 2. Stakeholders
 
@@ -26,7 +26,6 @@ Build me a Warehouse Management System with products, warehouses, inventory leve
 - Provide a working CRUD surface for every domain entity below.
 - Enforce referential integrity between related entities at the database level.
 - Keep per-app data isolated from other generated apps.
-- Expose AI-assisted features wired to the platform's LLM.
 
 ## 4. Scope
 
@@ -111,8 +110,6 @@ Build me a Warehouse Management System with products, warehouses, inventory leve
 - FR-2: Foreign-key relations are enforced; orphan rows are rejected.
 - FR-3: Every record has `id`, `created_at`, `updated_at` system columns.
 - FR-4: All data for this app lives in the `app_warehouse_management_system` Postgres schema.
-- FR-5: An AI endpoint (`/api/ai`) is available to augment records or answer
-  natural-language questions over the data.
 
 ## 7. Non-functional requirements
 

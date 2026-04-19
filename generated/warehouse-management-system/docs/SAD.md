@@ -39,8 +39,7 @@ Postgres schema (`app_warehouse_management_system`). The Aura platform owns the 
   input with Zod and issue parameterized SQL against the app's schema.
 - **Data access (`src/lib/db.ts`)** — a single `node-postgres` pool configured
   from `DATABASE_URL`; all queries run inside `SET search_path TO app_warehouse_management_system, public`.
-- **AI client (`src/lib/ai.ts`)** — calls the configured
-  Ollama endpoint. Enabled because the Blueprint sets `ai_enabled = true`.
+- **AI client (`src/lib/ai.ts`)** — stub; can be wired to Ollama/OpenAI/Anthropic when the Blueprint enables AI.
 
 ## 4. Data model
 

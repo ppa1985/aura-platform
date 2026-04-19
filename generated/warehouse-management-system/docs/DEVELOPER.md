@@ -29,7 +29,7 @@ warehouse-management-system/
 ├─ components/               # shadcn-style primitives + nav
    └─ lib/
       ├─ db.ts                  # pg pool + search_path
-      ├─ ai.ts                  # AI helper (enabled)
+      ├─ ai.ts                  # AI helper (stubbed)
       └─ utils.ts
 ```
 

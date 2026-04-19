@@ -8,8 +8,6 @@
 - npm 10+
 - Postgres 16 reachable via `DATABASE_URL`
 - (Optional) Docker 24+ if you want to run the container image.
-- A local Ollama instance (default: `http://localhost:11434`) or a compatible
-  endpoint, since this Blueprint has `ai_enabled = true`.
 
 ## 1. Provision the database schema
 
@@ -27,16 +25,12 @@ CREATE SCHEMA IF NOT EXISTS app_warehouse_management_system;
 |----------|----------|---------|
 | `DATABASE_URL` | yes | `postgres://aura:aura@localhost:5432/aura` |
 | `AURA_BASE_PATH` | no | `/` for local, `/generated/warehouse-management-system` behind Traefik |
-| `OLLAMA_URL` | yes | `http://localhost:11434` |
-| `OLLAMA_MODEL` | no | `llama3.2:3b` |
 
 Create a `.env.local` at the app root:
 
 ```bash
 DATABASE_URL=postgres://aura:aura@localhost:5432/aura
 AURA_BASE_PATH=/
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:3b
 ```
 
 ## 3. Install dependencies
@@ -73,4 +67,3 @@ docker run --rm -p 3000:3000 \
 
 - **`ECONNREFUSED` against Postgres**: confirm `DATABASE_URL` points at a running instance and the `app_warehouse_management_system` schema exists.
 - **Blank tables in the UI**: the schema is created, but no data has been inserted yet. Use the `/<entity>/new` forms or `POST /api/<entity>`.
-- **AI routes 500**: verify `OLLAMA_URL` is reachable from the container (use `host.docker.internal` from Docker).

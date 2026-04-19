@@ -224,14 +224,3 @@ curl -X POST http://localhost:3000/api/supplier \
 }'
 ```
 
-
-## AI
-
-Base path: `/api/ai`
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/ai` | Send a natural-language request; returns model output. |
-
-Request body: `{"prompt": "..."}`. Configured provider comes from the Blueprint
-(`ai_config.provider`, `ai_config.model`).

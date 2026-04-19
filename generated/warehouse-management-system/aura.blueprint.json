@@ -1,7 +1,7 @@
 {
   "name": "Warehouse Management System",
   "slug": "warehouse-management-system",
-  "description": "Build me a Warehouse Management System with products, warehouses, inventory levels, suppliers, and inbound/outbound shipments. Include a dashboard that summarizes stock levels across warehouses.",
+  "description": "Build me a Warehouse Management System with products, warehouses, inventory levels, and inbound/outbound shipments.",
   "entities": [
     {
       "name": "Warehouse",
@@ -216,10 +216,6 @@
       "description": null
     }
   ],
-  "ai_enabled": true,
-  "ai_config": {
-    "provider": "ollama",
-    "model": "llama3.2:3b",
-    "system_prompt": null
-  }
+  "ai_enabled": false,
+  "ai_config": null
 }
