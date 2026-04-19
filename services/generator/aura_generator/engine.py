@@ -187,7 +187,11 @@ def _coerce(raw: dict[str, Any], *, fallback_name: str) -> Blueprint:
     ai_config = data.get("ai_config")
     if isinstance(ai_config, dict):
         provider = str(ai_config.get("provider", "") or "").strip().lower()
-        if provider not in _ALLOWED_AI_PROVIDERS:
+        if provider in _ALLOWED_AI_PROVIDERS:
+            # Write the normalized (lowercased, stripped) value back so Pydantic's
+            # case-sensitive Literal accepts miscased LLM output like 'Ollama'.
+            ai_config["provider"] = provider
+        else:
             # Unknown provider (e.g. llama3.1 hallucinates 'googlecloud'): force ollama,
             # since that's the only LLM this deployment actually talks to.
             ai_config["provider"] = "ollama"

@@ -91,6 +91,23 @@ def test_coerce_remaps_unknown_ai_provider():
     assert bp.ai_config.model == "gemini-pro"
 
 
+@pytest.mark.parametrize("miscased", ["Ollama", "OLLAMA", " ollama ", "OpenAI", "Anthropic"])
+def test_coerce_accepts_miscased_known_ai_provider(miscased):
+    """Pydantic's Literal is case-sensitive. Valid providers emitted with
+    wrong casing (e.g. 'Ollama', 'OpenAI') must be normalized, not dropped."""
+    bp = _coerce(
+        {
+            "name": "Sample",
+            "entities": [{"name": "Item", "fields": [{"name": "x", "type": "string"}]}],
+            "ai_enabled": True,
+            "ai_config": {"provider": miscased, "model": "some-model"},
+        },
+        fallback_name="Sample",
+    )
+    assert bp.ai_config is not None
+    assert bp.ai_config.provider == miscased.strip().lower()
+
+
 @pytest.mark.asyncio
 async def test_llm_validation_error_falls_back_to_heuristic():
     """If the LLM returns JSON that _coerce cannot rescue (e.g. ai_config is
