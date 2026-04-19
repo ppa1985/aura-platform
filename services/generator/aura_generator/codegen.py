@@ -92,6 +92,11 @@ def generate_app(bp: Blueprint, root: Path | None = None) -> Path:
     _render(env, "README.md.j2", out / "README.md", ctx)
     _render(env, "aura.blueprint.json.j2", out / "aura.blueprint.json", ctx)
 
+    # Project documentation emitted alongside every generated app.
+    (out / "docs").mkdir(exist_ok=True)
+    for doc in ("BRD", "SAD", "API", "SETUP", "DEVELOPER"):
+        _render(env, f"docs/{doc}.md.j2", out / f"docs/{doc}.md", ctx)
+
     (out / "src").mkdir(exist_ok=True)
     (out / "src/app").mkdir(exist_ok=True)
     (out / "src/app/api").mkdir(exist_ok=True)
