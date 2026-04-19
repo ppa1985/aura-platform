@@ -1,0 +1,23 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+
+export function LogoutButton() {
+  const router = useRouter();
+
+  async function logout() {
+    try {
+      await fetch("/api/generator/auth/logout", { method: "POST" });
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  }
+
+  return (
+    <Button variant="outline" size="sm" onClick={logout} className="w-full">
+      Log out
+    </Button>
+  );
+}

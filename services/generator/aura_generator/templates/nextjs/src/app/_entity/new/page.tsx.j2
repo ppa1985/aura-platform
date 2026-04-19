@@ -1,0 +1,57 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export default function New{{ entity.name }}Page() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true); setErr(null);
+    const fd = new FormData(e.currentTarget);
+    const body: Record<string, unknown> = {};
+    fd.forEach((v, k) => { body[k] = v === "" ? null : v; });
+    const r = await fetch("/api/{{ entity.slug }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    setBusy(false);
+    if (!r.ok) { setErr(await r.text()); return; }
+    router.push("/{{ entity.slug }}");
+    router.refresh();
+  }
+
+  return (
+    <div className="max-w-xl space-y-4">
+      <h1 className="text-2xl font-semibold">New {{ entity.name }}</h1>
+      <form onSubmit={onSubmit} className="space-y-4">
+        {% for f in entity.fields %}
+        <div className="space-y-1.5">
+          <Label htmlFor="{{ f.name }}">{{ f.name }}{% if f.required %} *{% endif %}</Label>
+          {% if f.is_textarea %}
+          <Textarea id="{{ f.name }}" name="{{ f.name }}" {% if f.required %}required{% endif %} />
+          {% elif f.is_bool %}
+          <Input id="{{ f.name }}" name="{{ f.name }}" type="checkbox" />
+          {% else %}
+          <Input id="{{ f.name }}" name="{{ f.name }}" {% if f.required %}required{% endif %} />
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% for r in entity.relations %}
+        <div className="space-y-1.5">
+          <Label htmlFor="{{ r.column }}">{{ r.name }} (ID{% if r.required %}, required{% endif %})</Label>
+          <Input id="{{ r.column }}" name="{{ r.column }}" type="number" {% if r.required %}required{% endif %} />
+        </div>
+        {% endfor %}
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button type="submit" disabled={busy}>{busy ? "Saving..." : "Create"}</Button>
+      </form>
+    </div>
+  );
+}

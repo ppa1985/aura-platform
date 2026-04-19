@@ -1,0 +1,221 @@
+{
+  "name": "Warehouse Management System",
+  "slug": "warehouse-management-system",
+  "description": "Build me a Warehouse Management System with products, warehouses, inventory levels, and inbound/outbound shipments.",
+  "entities": [
+    {
+      "name": "Warehouse",
+      "description": null,
+      "fields": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "address",
+          "type": "text",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "Product",
+      "description": null,
+      "fields": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "sku",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "unit_price",
+          "type": "decimal",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "relations": [
+        {
+          "name": "supplier",
+          "target": "Supplier",
+          "kind": "many_to_one",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "InventoryLevel",
+      "description": null,
+      "fields": [
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "min_quantity",
+          "type": "integer",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "reorder_point",
+          "type": "integer",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "relations": [
+        {
+          "name": "product",
+          "target": "Product",
+          "kind": "many_to_one",
+          "required": true
+        },
+        {
+          "name": "warehouse",
+          "target": "Warehouse",
+          "kind": "many_to_one",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Shipment",
+      "description": null,
+      "fields": [
+        {
+          "name": "reference",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "direction",
+          "type": "string",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "shipped_at",
+          "type": "datetime",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "relations": [
+        {
+          "name": "warehouse",
+          "target": "Warehouse",
+          "kind": "many_to_one",
+          "required": true
+        },
+        {
+          "name": "supplier",
+          "target": "Supplier",
+          "kind": "many_to_one",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "Supplier",
+      "description": null,
+      "fields": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "contact_email",
+          "type": "string",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "phone",
+          "type": "string",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "pages": [
+    {
+      "type": "dashboard",
+      "title": "Overview",
+      "entity": null,
+      "description": null
+    }
+  ],
+  "ai_enabled": false,
+  "ai_config": null
+}

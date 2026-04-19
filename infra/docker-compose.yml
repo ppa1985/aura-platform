@@ -1,0 +1,95 @@
+name: aura
+
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    networks:
+      - aura
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aura
+      POSTGRES_PASSWORD: aura
+      POSTGRES_DB: aura
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - aura
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aura"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  generator:
+    build:
+      context: ..
+      dockerfile: services/generator/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://aura:aura@postgres:5432/aura
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:latest}
+      GENERATED_DIR: /workspace/generated
+      AURA_MODE: ${AURA_MODE:-inprocess}
+      AURA_JWT_SECRET: ${AURA_JWT_SECRET:?set AURA_JWT_SECRET in infra/.env (see .env.example)}
+      AURA_ENCRYPTION_KEY: ${AURA_ENCRYPTION_KEY:?set AURA_ENCRYPTION_KEY in infra/.env (see .env.example)}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../generated:/workspace/generated
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - aura
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.generator.rule=PathPrefix(`/api`)"
+      - "traefik.http.services.generator.loadbalancer.server.port=8000"
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: apps/dashboard/Dockerfile
+    environment:
+      GENERATOR_URL: http://generator:8000
+      DATABASE_URL: postgresql://aura:aura@postgres:5432/aura
+      NODE_ENV: production
+    depends_on:
+      - generator
+    ports:
+      - "3000:3000"
+    networks:
+      - aura
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.dashboard.priority=1"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
+
+volumes:
+  pgdata:
+
+networks:
+  aura:
+    name: aura
+    driver: bridge

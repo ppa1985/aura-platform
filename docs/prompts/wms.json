@@ -1,0 +1,4 @@
+{
+  "prompt": "Build me a Warehouse Management System with products, warehouses, inventory levels, suppliers, and inbound/outbound shipments. Include a dashboard that summarizes stock levels across warehouses.",
+  "use_llm": false
+}
