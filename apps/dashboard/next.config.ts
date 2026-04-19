@@ -1,18 +1,12 @@
 import type { NextConfig } from "next";
 
+// /api/generator/* is proxied to the FastAPI generator via a Route Handler at
+// src/app/api/generator/[...path]/route.ts so that GENERATOR_URL is read at
+// request time. A next.config rewrite would bake the value into
+// routes-manifest.json at build time and ignore the runtime container env.
+
 const config: NextConfig = {
   output: "standalone",
-  async rewrites() {
-    // Forward /api/generator/* to the FastAPI generator so the dashboard can call it directly.
-    const gen = process.env.GENERATOR_URL || "http://localhost:8000";
-    return {
-      beforeFiles: [
-        { source: "/api/generator/:path*", destination: `${gen}/:path*` },
-      ],
-      afterFiles: [],
-      fallback: [],
-    };
-  },
 };
 
 export default config;
