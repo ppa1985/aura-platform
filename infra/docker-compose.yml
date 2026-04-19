@@ -43,10 +43,12 @@ services:
       dockerfile: services/generator/Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://aura:aura@postgres:5432/aura
-      OLLAMA_URL: http://host.docker.internal:11434
-      OLLAMA_MODEL: llama3.2:3b
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:latest}
       GENERATED_DIR: /workspace/generated
-      AURA_MODE: docker
+      AURA_MODE: ${AURA_MODE:-inprocess}
+      AURA_JWT_SECRET: ${AURA_JWT_SECRET:?set AURA_JWT_SECRET in infra/.env (see .env.example)}
+      AURA_ENCRYPTION_KEY: ${AURA_ENCRYPTION_KEY:?set AURA_ENCRYPTION_KEY in infra/.env (see .env.example)}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

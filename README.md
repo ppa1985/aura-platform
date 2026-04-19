@@ -34,11 +34,17 @@ ollama serve &
 ollama pull llama3.2:3b
 
 # 2. Boot the stack (dashboard, generator, postgres, traefik)
+cp infra/.env.example infra/.env   # fill in AURA_JWT_SECRET + AURA_ENCRYPTION_KEY
 make up
 
 # 3. Open the dashboard
 open http://aura.local        # or http://localhost via /etc/hosts
 ```
+
+> Running on a 16 GB laptop with Docker Desktop capped? See
+> [`docs/LOCAL_DEV.md`](docs/LOCAL_DEV.md) for a 6.65 GB-friendly profile,
+> instructions for reusing an existing Ollama container, and real-LLM timing
+> benchmarks on CPU.
 
 ## Generating an app
 
