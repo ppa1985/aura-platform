@@ -135,7 +135,12 @@ def _table_for(entity: Entity) -> str:
 
 
 def create_app_schema(bp: Blueprint) -> str:
-    """Create a dedicated schema and tables for the app. Idempotent."""
+    """Create a dedicated schema and tables for the app. Idempotent.
+
+    Re-entrant: if the app is re-generated with an evolved Blueprint (e.g. the
+    user tweaks the prompt), we additively migrate each existing table to
+    include any new field/relation columns. Existing user data is preserved.
+    """
     schema = _schema_name(bp.slug)
     statements: list[str] = [f'CREATE SCHEMA IF NOT EXISTS "{schema}"']
     # Entity tables
@@ -156,8 +161,37 @@ def create_app_schema(bp: Blueprint) -> str:
     with engine().begin() as conn:
         for stmt in statements:
             conn.execute(text(stmt))
+        _migrate_missing_columns(conn, bp, schema)
         _add_fks(conn, bp, schema)
     return schema
+
+
+def _migrate_missing_columns(conn: Connection, bp: Blueprint, schema: str) -> None:
+    """ALTER TABLE ADD COLUMN IF NOT EXISTS for every expected field + FK column.
+
+    Without this, a re-generation with an evolved Blueprint would silently miss
+    new columns (since CREATE TABLE IF NOT EXISTS NOOPs on the existing table),
+    and _add_fks would then fail with 'column X does not exist'.
+    """
+    for entity in bp.entities:
+        table = _table_for(entity)
+        for f in entity.fields:
+            sql_type = _TYPE_SQL.get(f.type, "VARCHAR(255)")
+            conn.execute(
+                text(
+                    f'ALTER TABLE "{schema}"."{table}" '
+                    f'ADD COLUMN IF NOT EXISTS "{f.name}" {sql_type}'
+                )
+            )
+        for rel in entity.relations:
+            if rel.kind != "many_to_one":
+                continue
+            conn.execute(
+                text(
+                    f'ALTER TABLE "{schema}"."{table}" '
+                    f'ADD COLUMN IF NOT EXISTS "{rel.name}_id" BIGINT'
+                )
+            )
 
 
 def _col_sql(f: EntityField) -> str:
@@ -202,6 +236,20 @@ def _add_fks(conn: Connection, bp: Blueprint, schema: str) -> None:
                 {"s": schema, "t": table, "c": constraint},
             ).first()
             if exists:
+                continue
+            # Defensive: skip if the FK column isn't actually on the table.
+            # _migrate_missing_columns should have added it, but if the table
+            # pre-exists with an incompatible shape we'd rather log + skip than 500.
+            col_exists = conn.execute(
+                text(
+                    """
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = :s AND table_name = :t AND column_name = :c
+                    """
+                ),
+                {"s": schema, "t": table, "c": col},
+            ).first()
+            if not col_exists:
                 continue
             conn.execute(
                 text(
