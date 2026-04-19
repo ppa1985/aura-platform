@@ -43,7 +43,7 @@ from .deploy import stop as stop_deployment
 from .email_sender import send_verification_code
 from .engine import blueprint_from_prompt
 from .git_push import verify_token
-from .llm import health as ollama_health
+from .llm import active_model, health as llm_health
 from .pipeline import generate_from_blueprint, generate_from_prompt
 
 log = logging.getLogger("aura.generator")
@@ -117,9 +117,10 @@ class GitAccountIn(BaseModel):
 async def health() -> dict[str, Any]:
     return {
         "status": "ok",
-        "ollama": await ollama_health(),
+        "llm_provider": settings.llm_provider,
+        "llm_reachable": await llm_health(),
         "mode": settings.aura_mode,
-        "model": settings.ollama_model,
+        "model": active_model(),
     }
 
 

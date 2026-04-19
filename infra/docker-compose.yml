@@ -43,8 +43,13 @@ services:
       dockerfile: services/generator/Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://aura:aura@postgres:5432/aura
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:latest}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       GENERATED_DIR: /workspace/generated
       AURA_MODE: ${AURA_MODE:-inprocess}
       AURA_JWT_SECRET: ${AURA_JWT_SECRET:?set AURA_JWT_SECRET in infra/.env (see .env.example)}

@@ -9,12 +9,27 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://aura:aura@localhost:5432/aura"
+
+    # Which provider to call for blueprint generation / self-healing.
+    # One of: "ollama" (local), "groq" (cloud, fastest), "openai".
+    llm_provider: str = "ollama"
+
+    # Ollama (local)
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:3b"
 
+    # Groq — OpenAI-compatible endpoint. ~5s blueprints from the free tier.
+    groq_api_key: str = ""
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    groq_model: str = "llama-3.1-8b-instant"
+
+    # OpenAI (official)
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+
     generated_dir: Path = Path("/workspace/generated")
     templates_dir: Path = Path(__file__).parent / "templates"
-    ui_package_dir: Path = Path("/app/packages/ui")
 
     # "docker" builds real per-app containers; "inprocess" only writes files (for CI/tests).
     aura_mode: str = "inprocess"

@@ -28,7 +28,6 @@ RUN uv pip install --system -e '.[dev]' || uv pip install --system \
         httpx jinja2 python-slugify anyio rich docker pytest pytest-asyncio ruff
 
 COPY services/generator/ /app/
-COPY packages/ui /app/packages/ui
 
 ENV PYTHONPATH=/app
 

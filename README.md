@@ -21,12 +21,36 @@ Aura turns a natural-language prompt into a running, containerized full-stack ap
 | ------------------------- | ------------------------------------------------------ |
 | `apps/dashboard`          | Next.js 15 App Router UI for managing generated apps   |
 | `services/generator`      | FastAPI generator: Blueprint Engine, Schema Gen, Codegen, Self-Healing |
-| `packages/ui`             | Shadcn-based Enterprise UI component library (source of truth for generated apps) |
 | `infra`                   | Docker Compose, Traefik reverse proxy config           |
 | `generated/`              | Per-app workspaces written by the Auto-Coder           |
 | `docs/`                   | Architecture docs, Blueprint schema reference          |
 
 ## Quick start
+
+Aura's generator talks to a pluggable LLM backend via `LLM_PROVIDER`. Pick one:
+
+- **`ollama`** (default, fully local). Free, but slow on CPU: ~3–8 min per blueprint.
+- **`groq`** (recommended for fast demos). Free tier, ~2–5 s per blueprint.
+- **`openai`** (paid, ~$0.15 / 1M tokens with `gpt-4o-mini`).
+
+### Option A — Groq (fast, free)
+
+```bash
+# 1. Grab an API key at https://console.groq.com (no credit card)
+
+# 2. Configure + boot
+cp infra/.env.example infra/.env
+# Edit infra/.env and set:
+#   LLM_PROVIDER=groq
+#   GROQ_API_KEY=gsk_...
+#   AURA_JWT_SECRET=...  (see comment in file)
+#   AURA_ENCRYPTION_KEY=...  (see comment in file)
+make up
+
+# 3. Open http://localhost:3000
+```
+
+### Option B — Local Ollama
 
 ```bash
 # 1. Start Ollama on the host and pull a model (CPU-friendly)
