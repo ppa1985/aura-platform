@@ -61,6 +61,35 @@ _FIELD_TYPE_ALIASES: dict[str, str] = {
 }
 _ALLOWED_AI_PROVIDERS: set[str] = set(get_args(AIConfig.model_fields["provider"].annotation))
 
+# Relation kind normalization — Groq's llama-3.1-8b routinely emits
+# 'many_to_many' / 'one_to_one' / 'belongs_to' / 'has_many', none of which
+# are in our closed Literal. Map every known variant onto a valid kind;
+# default to 'many_to_one' since that's what ORM-style FKs expect.
+_ALLOWED_RELATION_KINDS: set[str] = {"many_to_one", "one_to_many"}
+_RELATION_KIND_ALIASES: dict[str, str] = {
+    "m2o": "many_to_one",
+    "manytoone": "many_to_one",
+    "belongs_to": "many_to_one",
+    "belongsto": "many_to_one",
+    "many-to-one": "many_to_one",
+    "o2m": "one_to_many",
+    "onetomany": "one_to_many",
+    "has_many": "one_to_many",
+    "hasmany": "one_to_many",
+    "one-to-many": "one_to_many",
+    # Collapse many-to-many onto a single FK; we don't model join tables yet.
+    "many_to_many": "many_to_one",
+    "manytomany": "many_to_one",
+    "m2m": "many_to_one",
+    "many-to-many": "many_to_one",
+    # Collapse one-to-one likewise onto many_to_one.
+    "one_to_one": "many_to_one",
+    "onetoone": "many_to_one",
+    "has_one": "many_to_one",
+    "hasone": "many_to_one",
+    "one-to-one": "many_to_one",
+}
+
 SYSTEM_PROMPT = """You are Aura's Blueprint Engine. Given a natural-language
 description of an application, produce a JSON App Blueprint describing its
 entities, fields, relations, and pages.
@@ -131,6 +160,20 @@ async def blueprint_from_prompt(prompt: str, *, use_llm: bool = True) -> Bluepri
     return bp
 
 
+def _normalize_relation_kind(raw_kind: Any) -> str:
+    """Map LLM-emitted relation kinds onto our closed Literal.
+
+    Real LLMs emit 'many_to_many', 'one_to_one', 'belongs_to', 'has_many'
+    — none of which are valid. Exact match → alias table → safe default.
+    """
+    if not isinstance(raw_kind, str):
+        return "many_to_one"
+    k = raw_kind.strip().lower()
+    if k in _ALLOWED_RELATION_KINDS:
+        return k
+    return _RELATION_KIND_ALIASES.get(k, "many_to_one")
+
+
 def _normalize_field_type(raw_type: Any) -> str:
     """Map LLM-emitted field types onto our closed FieldType Literal.
 
@@ -174,6 +217,9 @@ def _coerce(raw: dict[str, Any], *, fallback_name: str) -> Blueprint:
         # Normalize every field type to the closed FieldType Literal
         for f in fields:
             f["type"] = _normalize_field_type(f.get("type"))
+        # Normalize every relation kind too; drop 'many_to_many' onto many_to_one etc.
+        for r in rels:
+            r["kind"] = _normalize_relation_kind(r.get("kind"))
         ents.append({"name": e["name"], "description": e.get("description"), "fields": fields, "relations": rels})
     data["entities"] = ents
 

@@ -91,6 +91,43 @@ def test_coerce_remaps_unknown_ai_provider():
     assert bp.ai_config.model == "gemini-pro"
 
 
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("many_to_one", "many_to_one"),
+        ("one_to_many", "one_to_many"),
+        ("MANY_TO_ONE", "many_to_one"),
+        ("many_to_many", "many_to_one"),  # collapsed: we don't model join tables
+        ("ManyToMany", "many_to_one"),
+        ("m2m", "many_to_one"),
+        ("many-to-many", "many_to_one"),
+        ("one_to_one", "many_to_one"),
+        ("belongs_to", "many_to_one"),
+        ("has_many", "one_to_many"),
+        ("hasOne", "many_to_one"),
+        ("garbage", "many_to_one"),  # unknown → safe default
+        (42, "many_to_one"),  # non-string → safe default
+    ],
+)
+def test_coerce_normalizes_relation_kind(raw, expected):
+    """Groq llama-3.1-8b emits 'many_to_many', 'belongs_to', etc. that fail
+    the relation-kind Literal. _coerce must map them onto valid kinds."""
+    bp = _coerce(
+        {
+            "name": "Sample",
+            "entities": [
+                {
+                    "name": "Order",
+                    "fields": [{"name": "total", "type": "decimal"}],
+                    "relations": [{"name": "product", "target": "Product", "kind": raw}],
+                }
+            ],
+        },
+        fallback_name="Sample",
+    )
+    assert bp.entities[0].relations[0].kind == expected
+
+
 @pytest.mark.parametrize("miscased", ["Ollama", "OLLAMA", " ollama ", "OpenAI", "Anthropic"])
 def test_coerce_accepts_miscased_known_ai_provider(miscased):
     """Pydantic's Literal is case-sensitive. Valid providers emitted with
