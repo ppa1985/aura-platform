@@ -14,7 +14,6 @@ class Settings(BaseSettings):
 
     generated_dir: Path = Path("/workspace/generated")
     templates_dir: Path = Path(__file__).parent / "templates"
-    ui_package_dir: Path = Path("/app/packages/ui")
 
     # "docker" builds real per-app containers; "inprocess" only writes files (for CI/tests).
     aura_mode: str = "inprocess"

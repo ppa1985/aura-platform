@@ -21,7 +21,6 @@ Aura turns a natural-language prompt into a running, containerized full-stack ap
 | ------------------------- | ------------------------------------------------------ |
 | `apps/dashboard`          | Next.js 15 App Router UI for managing generated apps   |
 | `services/generator`      | FastAPI generator: Blueprint Engine, Schema Gen, Codegen, Self-Healing |
-| `packages/ui`             | Shadcn-based Enterprise UI component library (source of truth for generated apps) |
 | `infra`                   | Docker Compose, Traefik reverse proxy config           |
 | `generated/`              | Per-app workspaces written by the Auto-Coder           |
 | `docs/`                   | Architecture docs, Blueprint schema reference          |
