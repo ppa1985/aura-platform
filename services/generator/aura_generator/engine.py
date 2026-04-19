@@ -149,7 +149,9 @@ async def blueprint_from_prompt(prompt: str, *, use_llm: bool = True) -> Bluepri
                 bp.ensure_default_pages()
                 return bp
         except OllamaError as exc:
-            log.warning("ollama error, falling back to heuristic: %s", exc)
+            # OllamaError is an alias for LLMError; this clause catches Groq
+            # and OpenAI failures too. Keep the message provider-neutral.
+            log.warning("LLM error, falling back to heuristic: %s", exc)
         except ValidationError as exc:
             # LLM returned structurally-invalid JSON the sanitizer couldn't rescue
             # (e.g. missing required fields, wrong nesting). Fall back to heuristic.
