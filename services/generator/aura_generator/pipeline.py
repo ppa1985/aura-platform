@@ -58,7 +58,13 @@ async def generate_from_blueprint(bp: Blueprint, *, user_id: int | None = None) 
         deployment = None
         url = f"{settings.public_base_url}/generated/{bp.slug}"
         try:
-            deployment = deploy(app_dir, bp.slug, database_url=settings.database_url)
+            # Strip SQLAlchemy dialect prefix: the generated Node.js container
+            # uses `pg` (node-postgres), which only accepts `postgres://` or
+            # `postgresql://` URLs — not `postgresql+psycopg://`.
+            db_url = settings.database_url.replace(
+                "postgresql+psycopg://", "postgresql://"
+            )
+            deployment = deploy(app_dir, bp.slug, database_url=db_url)
             url = deployment.get("url", url)
         except Exception as exc:  # deployment is best-effort; codegen is the deliverable
             deployment = {"backend": "error", "error": str(exc)}

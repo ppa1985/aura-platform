@@ -220,15 +220,17 @@ def _heuristic(prompt: str) -> Blueprint:
 
     ai_enabled = any(k in p for k in ["ai", "llm", "news analysis", "recommend", "summariz", "chat", "assistant"])
 
-    bp = Blueprint(
+    # Leave `pages` empty so the caller's `ensure_default_pages()` synthesizes
+    # the full set (dashboard + list/form/detail per entity). Pre-appending a
+    # dashboard here would short-circuit ensure_default_pages and starve the
+    # Blueprint of entity pages.
+    return Blueprint(
         name=_pretty_name(prompt) or name,
         description=prompt.strip()[:280],
         entities=entities,
         ai_enabled=ai_enabled,
         ai_config=AIConfig() if ai_enabled else None,
     )
-    bp.pages.append(Page(type="dashboard", title="Overview"))
-    return bp
 
 
 def _pretty_name(prompt: str) -> str | None:

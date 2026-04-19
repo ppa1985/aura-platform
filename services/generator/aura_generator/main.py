@@ -23,11 +23,13 @@ from .blueprint import Blueprint
 from .config import settings
 from .crypto import encrypt
 from .db import (
+    SlugTakenError,
     consume_verification,
     create_user,
     create_verification,
     delete_app,
     delete_git_account,
+    drop_app_schema,
     get_app,
     get_git_account,
     get_user,
@@ -288,13 +290,20 @@ async def create_blueprint(body: PromptIn, _: dict = Depends(current_user)) -> B
 async def create_app_route(body: GenerateIn, user: dict = Depends(current_user)) -> dict[str, Any]:
     if not body.prompt and not body.blueprint:
         raise HTTPException(400, "Provide either `prompt` or `blueprint`.")
-    result = (
-        await generate_from_blueprint(body.blueprint, user_id=user["id"])
-        if body.blueprint
-        else await generate_from_prompt(
-            body.prompt or "", use_llm=body.use_llm, user_id=user["id"]
+    try:
+        result = (
+            await generate_from_blueprint(body.blueprint, user_id=user["id"])
+            if body.blueprint
+            else await generate_from_prompt(
+                body.prompt or "", use_llm=body.use_llm, user_id=user["id"]
+            )
         )
-    )
+    except SlugTakenError as exc:
+        raise HTTPException(
+            409,
+            f"The app name '{exc.slug}' is already taken by another user. "
+            "Please choose a different name.",
+        ) from exc
     return {
         "slug": result.blueprint.slug,
         "name": result.blueprint.name,
@@ -330,6 +339,10 @@ async def delete_single_app(slug: str, user: dict = Depends(current_user)) -> di
     try:
         stop_deployment(slug)
     except Exception:
-        pass
+        log.warning("stop_deployment failed for %s", slug, exc_info=True)
+    try:
+        drop_app_schema(slug)
+    except Exception:
+        log.warning("drop_app_schema failed for %s", slug, exc_info=True)
     delete_app(slug, user_id=user["id"])
     return {"ok": True}

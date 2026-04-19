@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import shutil
 import subprocess
 import tempfile
@@ -11,6 +12,13 @@ from pathlib import Path
 import httpx
 
 log = logging.getLogger("aura.git")
+
+_CRED_IN_URL = re.compile(r"(https?://)[^/@\s]+@")
+
+
+def _redact(s: str) -> str:
+    """Mask any `user:token@` credential embedded in a URL before logging."""
+    return _CRED_IN_URL.sub(r"\1***@", s)
 
 USER_AGENT = "aura-platform/0.1"
 
@@ -55,12 +63,12 @@ def _remote_url(provider: str, token: str, workspace_repo: str) -> str:
 
 
 def _run(cmd: list[str], cwd: Path, env: dict | None = None) -> None:
-    log.info("git exec: %s (cwd=%s)", " ".join(cmd), cwd)
+    safe_cmd = [_redact(c) for c in cmd]
+    log.info("git exec: %s (cwd=%s)", " ".join(safe_cmd), cwd)
     result = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(
-            f"git command failed ({cmd[:2]}): {result.stderr.strip() or result.stdout.strip()}"
-        )
+        stderr = _redact(result.stderr.strip() or result.stdout.strip())
+        raise RuntimeError(f"git command failed ({safe_cmd[:2]}): {stderr}")
 
 
 def push_app_to_workspace(
@@ -103,7 +111,7 @@ def push_app_to_workspace(
         )
         created_empty = False
         if clone.returncode != 0:
-            log.warning("clone failed, initializing new repo: %s", clone.stderr.strip())
+            log.warning("clone failed, initializing new repo: %s", _redact(clone.stderr.strip()))
             workdir.mkdir(parents=True, exist_ok=True)
             _run(["git", "init", "-b", "main"], workdir, env)
             _run(["git", "remote", "add", "origin", url_with_token], workdir, env)

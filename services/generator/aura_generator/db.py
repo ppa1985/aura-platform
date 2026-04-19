@@ -232,7 +232,15 @@ def upsert_app(
 ) -> None:
     now = datetime.now(timezone.utc)
     with engine().begin() as conn:
-        existing = conn.execute(select(apps_table.c.id).where(apps_table.c.slug == bp.slug)).first()
+        existing = conn.execute(
+            select(apps_table.c.id, apps_table.c.user_id).where(apps_table.c.slug == bp.slug)
+        ).first()
+        # Slugs are globally unique (Traefik routes by slug, and the deploy
+        # container is named after the slug). If a row already exists under
+        # another user, refuse to overwrite it — the caller must retry with a
+        # different name.
+        if existing and user_id is not None and existing.user_id not in (None, user_id):
+            raise SlugTakenError(bp.slug)
         payload: dict[str, object] = {
             "slug": bp.slug,
             "name": bp.name,
@@ -249,6 +257,14 @@ def upsert_app(
             conn.execute(update(apps_table).where(apps_table.c.slug == bp.slug).values(**payload))
         else:
             conn.execute(insert(apps_table).values(created_at=now, **payload))
+
+
+class SlugTakenError(ValueError):
+    """Raised when another user already owns an app with this slug."""
+
+    def __init__(self, slug: str) -> None:
+        super().__init__(f"app slug '{slug}' is already owned by another user")
+        self.slug = slug
 
 
 def set_app_status(
