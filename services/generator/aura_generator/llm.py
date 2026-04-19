@@ -171,8 +171,10 @@ async def _groq_generate_json(prompt: str, *, system: str | None, model: str | N
     )
     try:
         return json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise LLMError(f"Groq returned non-JSON content: {raw[:500]}") from exc
+    except (json.JSONDecodeError, TypeError) as exc:
+        # TypeError covers the case where _oai_chat returned None
+        # (OpenAI spec allows content: null, e.g. on refusal).
+        raise LLMError(f"Groq returned non-JSON content: {str(raw)[:500]}") from exc
 
 
 async def _groq_generate_text(prompt: str, *, system: str | None, model: str | None) -> str:
@@ -215,8 +217,10 @@ async def _openai_generate_json(prompt: str, *, system: str | None, model: str |
     )
     try:
         return json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise LLMError(f"OpenAI returned non-JSON content: {raw[:500]}") from exc
+    except (json.JSONDecodeError, TypeError) as exc:
+        # TypeError covers the case where _oai_chat returned None
+        # (OpenAI spec allows content: null, e.g. on refusal).
+        raise LLMError(f"OpenAI returned non-JSON content: {str(raw)[:500]}") from exc
 
 
 async def _openai_generate_text(prompt: str, *, system: str | None, model: str | None) -> str:

@@ -103,6 +103,36 @@ async def test_groq_non_json_content_raises_llmerror(monkeypatch, groq_settings)
 
 
 @pytest.mark.asyncio
+async def test_groq_null_content_raises_llmerror(monkeypatch, groq_settings):
+    """OpenAI spec allows `content: null` (e.g. on refusals). json.loads(None)
+    raises TypeError, not JSONDecodeError — must still surface as LLMError so
+    engine.py's fallback path can catch it."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"role": "assistant", "content": None}}]},
+        )
+
+    _patch_client(monkeypatch, handler)
+    with pytest.raises(llm.LLMError, match="Groq returned non-JSON"):
+        await llm.generate_json("anything")
+
+
+@pytest.mark.asyncio
+async def test_openai_null_content_raises_llmerror(monkeypatch, openai_settings):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"role": "assistant", "content": None}}]},
+        )
+
+    _patch_client(monkeypatch, handler)
+    with pytest.raises(llm.LLMError, match="OpenAI returned non-JSON"):
+        await llm.generate_json("anything")
+
+
+@pytest.mark.asyncio
 async def test_groq_missing_api_key_raises(monkeypatch):
     monkeypatch.setattr(settings, "llm_provider", "groq")
     monkeypatch.setattr(settings, "groq_api_key", "")
